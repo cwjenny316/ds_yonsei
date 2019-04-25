@@ -1,0 +1,173 @@
+---
+title: "Timeseries HW1"
+author: "Chaewon Kim(2015122043)"
+date: 2019/ 04/ 12
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 과제 개요
+
+ - 계절지수평활법의 정의와 내용
+ - 데이터 설명
+ - 시도표
+ - 계절지수평활법
+    - 가법 모형
+    - 승법 모형
+ - 최종 모형
+
+
+## Winters의 계절지수평활법
+
+###가법계절모형 (Additive seasonal model)
+   : 시계열의 평균수준이 시간의 흐름에 따라 변화하지만 그 변동의 폭, 즉, 분산이 시간의 흐름에 관계없이 일정한 경우(homogeneous)
+   
+   $$Z_{n+l}=T_{n+l}+S_{n+l}+I_{n+l}$$
+  
+  - T : 추세요인
+  
+  - S : 계절주기 s를 가지는 계절요인
+  
+  - I : 오차항으로서 불규칙 요인
+  
+
+
+###승법계절모형 (multiplicative seasonal model)
+   : 분산이 시간의 흐름에 따라 점차로 커지는 경우
+
+  $$Z_{n+l}=T_{n+l}*S_{n+l}+I_{n+l}=(T_n+\beta_{1,n})S_{n+l}+I_{n+l}$$
+
+  - T : 추세요인
+  
+  - S : 계절주기 s를 가지는 계절요인
+  
+  - I : 오차항으로서 불규칙 요인
+  
+
+
+
+
+  
+## 데이터
+
+| 정보 |  내용      |
+|------------|:------------:|
+|   데이터 명   |  BOK_energy_oil.csv    |
+| 데이터 종류 |  csv file, data frame     |
+| 변수 개수|  1개     |
+| 변수 정보 |  기름값     |
+| 관측치 개수 |  267개     |
+| 관측치 정보 |  시간에 따른 기름값   |
+
+
+
+
+
+
+
+
+## 시도표 확인하기
+
+데이터를 불러온 후 ts함수를 이용해 시계열 데이터로 변환해준다.
+
+데이터에 대한 사전정보가 없으므로 1996년 1월부터 2018년 3월까지 매달 기름값(단위생략)이라고 임의로 지정해주었다.
+
+```{r 시도표 확인, warning=FALSE}
+library('forecast')
+setwd("C:\\Users\\cwjen_000\\Desktop\\ds_yonsei")
+oil<- read.csv("BOK_energy_oil.csv", header=T)
+oil <-ts(oil, start=c(1996,1), end=c(2018,3), frequency=12)
+plot.ts(oil, xlab="Time", ylab="Price")
+```
+
+**시도표를 보니 계절성과 추세가 둘 다 보인다. 시간이 갈수록 증가하는 추세를 보이며, 변동의 폭이 시간이 갈수록 조금씩 작아진다.**
+
+
+
+
+
+
+
+## 계절지수평활법 사용하기
+ *-forecast패키지 사용*
+
+###**승법모형**
+```{r echo=F, warning=F}
+library(forecast)
+```
+
+```{r}
+fit1 <- hw(oil, seasonal="multiplicative", h=10)
+fit1$model
+```
+
+
+
+
+R이 지정해준 승법모형의 알파, 베타, 감마의 값은 다음과 같다.
+```{r eval=FALSE}
+alpha = 0.4217 
+beta  = 0.007 
+gamma = 0.3211
+```
+    
+
+
+       
+2017년 3월 이후 10개의 달의 기름값을 승법모형으로 예측한 결과는 아래의 **Forecast**부분에 나온다.
+```{r echo=F}
+fit1
+```
+   
+   
+
+###**가법모형**
+```{r}
+fit2 <- hw(oil, seasonal="additive", h=10)
+fit2$model
+```
+
+
+R이 지정해준 가법모형의 알파, 베타, 감마의 값은 다음과 같다.
+```{r eval=F}
+alpha = 0.7433 
+beta  = 0.0051 
+gamma = 1e-04
+```
+
+
+2017년 3월 이후 10개의 달의 기름값을 가법모형으로 예측한 결과는 아래의 **Forecast**부분에 나온다.
+```{r echo=F}
+fit2
+```
+
+
+
+
+
+## 최종 모형 선택
+ 데이터와 가법모형, 승법모형은 다음과 같다.
+
+두 모형 모두 원래 데이터와 거의 비슷한 추세와 변동폭을 보여주고 있지만, 시간이 갈수록 가법모형이 더 데이터와 비슷한 추세를 보여준다. 미래 시점의 값을 예측을 목표로 하는 시계열 분석에서는 **가법모형(fit2)**을 쓰는 것이 더 적절해 보인다.
+
+
+```{r echo=F}
+plot(fit1, ylab="Price of oil", xlab="time", fcol="white", main="")
+lines(fitted(fit1), col="red",lwd=1.5,pch=1,lty=2,type="o")
+lines(fitted(fit2), col="green",lwd=1.5,pch=1,lty=3, type="o")
+
+lines(fit1$mean, col="red", lty=2, type="o",lwd=2,pch=1)
+lines(fit2$mean, col="green", lty=3, type="o",lwd=2,pch=2)
+legend("topleft", lty=1:3, pch=c(16,1,2),col=1:3, c("data","hw multiplicative","hw additive"),cex=0.7)
+```
+ 
+
+
+
+
